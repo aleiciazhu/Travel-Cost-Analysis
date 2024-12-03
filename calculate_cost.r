@@ -3,16 +3,21 @@ library(tidycensus)
 library(tidyverse)
 library(zipcodeR)
 
-census_api_key("425aad91b462f2b0a30b2ee56ce3823ef188eef5")
+# Load csv data
+acs_df = read.csv("acs_data.csv")
+permit_df = read.csv("pdat_wPRISM.csv")
+visit_df = read.csv("visitRate.csv")
 
-zcta_df = get_acs(
-  geography = "zcta",
-  variables = "B19013_001",
-  year      = 2022)
-colnames(zcta_df)[1] <- "zcta"
-print.data.frame(head(zcta_df))
+# List of all ZCTAs
+zcta_df = subset(acs_df, select = c("zcta"))
 
-zcta_list = as.vector(zcta_df$zcta)
+# create cost df with Postal Code and dist columns of permit_df
+cost_df = subset(permit_df, select = c(Postal.Code, dist))
+cost_df = cost_df[complete.cases(cost_df), ]
+str(cost_df$Postal.Code)
 
-distance_df = zip_distance(zcta_list, "93545")
-print.data.frame(head(distance_df))
+# Calculate travel time, gas cost, and time cost
+cost_df$travel_time = cost_df$dist / 60  # Assume 60 mph
+cost_df$gas_cost = cost_df$dist * 0.72 # $0.72 per mile
+cost_df$time_cost = cost_df$travel_time * 40.02 * 0.33  # California average wage of $40.02
+
