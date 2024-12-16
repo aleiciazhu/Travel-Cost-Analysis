@@ -26,7 +26,7 @@ acs_male = get_acs(
   geography = "zcta",
   variables = "B01001_002",
   year      = 2022)
-colnames(acs_male)[4] <- "total_male_population"
+colnames(acs_male)[4] <- "male"
 acs_male <- subset(acs_male, select = -c(1, 3, 5))
 
 acs_age = get_acs(
@@ -76,7 +76,16 @@ dfs <- list(acs_income, acs_total, acs_male, acs_age, acs_hispanic, acs_white, a
 acs_df <- Reduce(function(x, y) merge(x, y, by = "NAME"), dfs)
 colnames(acs_df)[1] <- "zcta"
 
-print.data.frame(head(acs_df))
+# change to percentage of total population for each demographic
+acs_df$male <- acs_df$male / acs_df$total_population
+acs_df$hispanic <- acs_df$hispanic / acs_df$total_population
+acs_df$white <- acs_df$white / acs_df$total_population
+acs_df$black <- acs_df$black / acs_df$total_population
+acs_df$asian <- acs_df$asian / acs_df$total_population
+acs_df$indigenous <- acs_df$indigenous / acs_df$total_population
+
+# remove total population column
+acs_df <- subset(acs_df, select = -c(total_population))
 
 # write to csv
 write.csv(acs_df, "acs_data.csv", row.names = FALSE)
