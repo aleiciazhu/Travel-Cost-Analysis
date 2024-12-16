@@ -1,23 +1,33 @@
 # Regression analysis for Inyo County
-library(tidycensus)
 library(tidyverse)
-library(zipcodeR)
 
 # Load csv data
-acs_df = read.csv("acs_data.csv")
-permit_df = read.csv("pdat_wPRISM.csv")
-visit_df = read.csv("visitRate.csv")
+acs_df <- read.csv("acs_data.csv")
+permit_df <- read.csv("pdat_wPRISM.csv")
+visit_19_df <- read.csv("visit_19.csv")
+visit_20_df <- read.csv("visit_20.csv")
 
-# List of all ZCTAs
-zcta_df = subset(acs_df, select = c("zcta"))
+# Clean up dataframes
+permit_df$Postal.Code <- substr(permit_df$Postal.Code, 1, 5)
+acs_df$zcta <- substr(acs_df$zcta, 7, nchar(acs_df$zcta))
+visit_29_df <- subset(visit_19_df, select = c(zcta, visits.per.100000))
+visit_20_df <- subset(visit_20_df, select = c(zcta, visits.per.100000))
+colnames(permit_df)[colnames(permit_df) == "Postal.Code"] <- "zcta"
+colnames(visit_19_df)[colnames(visit_19_df) == "Zip.Code"] <- "zcta"
+colnames(visit_20_df)[colnames(visit_20_df) == "Zip.Code"] <- "zcta"
 
-# create cost df with Postal Code and dist columns of permit_df
-cost_df = subset(permit_df, select = c(Postal.Code, dist))
+# Create cost df with Postal Code and dist columns of permit_df
+cost_df = subset(permit_df, select = c(zcta, dist))
+cost_df = cost_df[!duplicated(cost_df$zcta), ]
 cost_df = cost_df[complete.cases(cost_df), ]
-str(cost_df$Postal.Code)
-
-# Calculate travel time, gas cost, and time cost
 cost_df$travel_time = cost_df$dist / 60  # Assume 60 mph
-cost_df$gas_cost = cost_df$dist * 0.72 # $0.72 per mile
-cost_df$time_cost = cost_df$travel_time * 40.02 * 0.33  # California average wage of $40.02
 
+# Duplicate cost_df for 2019 and 2020
+cost_19_df = cost_df
+cost_20_df = cost_df
+
+cost_19_df$travel_cost = cost_19_df$dist * 0.21 + cost_19_df$travel_time * 32.88 * 0.33
+cost_20_df$travel_cost = cost_20_df$dist * 0.20 + cost_20_df$travel_time * 34.55 * 0.33
+
+write.csv(cost_19_df, "cost_19.csv", row.names = FALSE)
+write.csv(cost_20_df, "cost_20.csv", row.names = FALSE)
